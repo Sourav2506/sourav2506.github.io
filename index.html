@@ -4,9 +4,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1 Second Challenge</title>
 
-<!-- AdSense verification -->
+<!-- AdSense verification (replace later if needed) -->
+
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6860775768496575"
      crossorigin="anonymous"></script>
+
 
 <style>
 :root {
@@ -89,13 +91,12 @@ footer {
   opacity: 0.6;
 }
 
-/* Theme toggle button */
+/* Theme toggle */
 .toggle {
   position: absolute;
   top: 15px;
   right: 15px;
   cursor: pointer;
-  font-size: 18px;
 }
 </style>
 </head>
@@ -121,6 +122,12 @@ footer {
 
 </div>
 
+<!-- ABOUT SECTION (IMPORTANT FOR ADSENSE) -->
+<div style="max-width:420px;margin-top:20px;font-size:13px;opacity:0.7;text-align:center;">
+  <p>This is a simple timing challenge where you try to stop exactly at 1.000 seconds.</p>
+  <p>It helps improve focus, timing, and reaction skills.</p>
+</div>
+
 <footer>
   <a href="#" onclick="showPolicy()">Privacy Policy</a>
 </footer>
@@ -129,7 +136,7 @@ footer {
 let startTime = 0;
 let running = false;
 
-/* THEME SYSTEM */
+/* THEME */
 function setTheme(mode) {
   if (mode === "light") {
     document.body.classList.add("light");
@@ -144,15 +151,9 @@ function toggleTheme() {
   setTheme(isLight ? "dark" : "light");
 }
 
-// Load theme
 (function () {
   const saved = localStorage.getItem("theme");
-  if (saved) {
-    setTheme(saved);
-  } else {
-    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
-    setTheme(prefersLight ? "light" : "dark");
-  }
+  if (saved) setTheme(saved);
 })();
 
 /* DAILY ATTEMPTS */
@@ -209,16 +210,31 @@ function evaluate(diff) {
   document.getElementById("actions").innerHTML = `
     <button class="secondary" onclick="share('${rounded}')">Share</button>
     <button class="primary" onclick="tap()">Try Again</button>
+    ${rounded === "1.000" ? `<p class="small">this is rare 👀</p>` : ""}
   `;
 
   updateUI();
 }
 
 function share(score) {
-  let text = `${score}s 😳
+  let text;
 
-can you beat me?
+  if (score === "1.000") {
+    text = `1.000s 😳
+
+try this ↓
 ${location.href}`;
+  } else if (Math.abs(1 - score) < 0.02) {
+    text = `${score}s 😭 so close
+
+your turn ↓
+${location.href}`;
+  } else {
+    text = `${score}s...
+
+can you do better?
+${location.href}`;
+  }
 
   if (navigator.share) {
     navigator.share({ text });
@@ -259,7 +275,16 @@ function watchAd() {
 }
 
 function showPolicy() {
-  alert("This site may use cookies and ads to improve experience.");
+  document.body.innerHTML = `
+    <div style="padding:20px;font-family:sans-serif;">
+      <h2>Privacy Policy</h2>
+      <p>This site uses cookies and third-party services like Google AdSense to display ads.</p>
+      <p>No personal data is collected directly.</p>
+      <p>By using this site, you agree to this policy.</p>
+      <br>
+      <button onclick="location.reload()">Back</button>
+    </div>
+  `;
 }
 </script>
 
