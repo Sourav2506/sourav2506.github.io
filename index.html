@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1 Second Challenge</title>
+
+<style>
+:root {
+  --bg-dark: linear-gradient(160deg, #0a0a0a, #1a1a1a);
+  --bg-light: linear-gradient(160deg, #ffffff, #ececec);
+  --text-dark: #f5f5f5;
+  --text-light: #111;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, system-ui;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-dark);
+  color: var(--text-dark);
+  transition: 0.3s;
+}
+
+.light {
+  background: var(--bg-light);
+  color: var(--text-light);
+}
+
+.card {
+  backdrop-filter: blur(45px);
+  background: rgba(30,30,30,0.5);
+  border-radius: 28px;
+  padding: 32px;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.light .card {
+  background: rgba(255,255,255,0.85);
+}
+
+button {
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  margin: 10px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.primary {
+  background: rgba(255,255,255,0.12);
+}
+
+.light .primary {
+  background: #f0f0f0;
+  color: #111;
+}
+
+.secondary {
+  background: transparent;
+  border: 1px solid rgba(150,150,150,0.3);
+}
+
+#result {
+  font-size: 28px;
+  margin-top: 20px;
+  min-height: 50px;
+}
+
+.small {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+footer {
+  margin-top: 20px;
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+/* Theme toggle button */
+.toggle {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
+  font-size: 18px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="toggle" onclick="toggleTheme()">🌓</div>
+
+<div class="card">
+
+<h2>⏱ 1 Second Challenge</h2>
+<p class="small">Tap twice → hit exactly 1.000s</p>
+
+<button class="primary" onclick="tap()">START / STOP</button>
+
+<div id="result"></div>
+<div id="actions"></div>
+
+<p class="small" id="attemptsUI"></p>
+<p class="small" id="best"></p>
+
+<div id="adBox"></div>
+
+</div>
+
+<footer>
+  <a href="#" onclick="showPolicy()">Privacy Policy</a>
+</footer>
+
+<script>
+let startTime = 0;
+let running = false;
+
+/* THEME SYSTEM */
+function setTheme(mode) {
+  if (mode === "light") {
+    document.body.classList.add("light");
+  } else {
+    document.body.classList.remove("light");
+  }
+  localStorage.setItem("theme", mode);
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains("light");
+  setTheme(isLight ? "dark" : "light");
+}
+
+// Load theme
+(function () {
+  const saved = localStorage.getItem("theme");
+  if (saved) {
+    setTheme(saved);
+  } else {
+    const prefersLight = window.matchMedia("(prefers-color-scheme: light)").matches;
+    setTheme(prefersLight ? "light" : "dark");
+  }
+})();
+
+/* DAILY ATTEMPTS */
+let today = new Date().toDateString();
+let storedDay = localStorage.getItem("day");
+let attempts = parseInt(localStorage.getItem("attempts") || 0);
+
+if (storedDay !== today) {
+  attempts = 0;
+  localStorage.setItem("day", today);
+  localStorage.setItem("attempts", attempts);
+}
+
+let best = localStorage.getItem("best");
+
+updateUI();
+
+function tap() {
+  if (attempts >= 5) {
+    showAdGate();
+    return;
+  }
+
+  if (!running) {
+    startTime = Date.now();
+    running = true;
+    setResult("Go...");
+  } else {
+    let diff = (Date.now() - startTime) / 1000;
+    running = false;
+
+    attempts++;
+    localStorage.setItem("attempts", attempts);
+
+    evaluate(diff);
+  }
+}
+
+function evaluate(diff) {
+  let rounded = diff.toFixed(3);
+  let message = `You: ${rounded}s`;
+
+  if (rounded === "1.000") message += " 🔥 PERFECT";
+  else if (Math.abs(1 - rounded) < 0.01) message += " 😭 0.01 away";
+  else if (Math.abs(1 - rounded) < 0.02) message += " 😳 so close";
+
+  if (!best || Math.abs(1-rounded) < Math.abs(1-best)) {
+    best = rounded;
+    localStorage.setItem("best", best);
+  }
+
+  setResult(message);
+
+  document.getElementById("actions").innerHTML = `
+    <button class="secondary" onclick="share('${rounded}')">Share</button>
+    <button class="primary" onclick="tap()">Try Again</button>
+  `;
+
+  updateUI();
+}
+
+function share(score) {
+  let text = `${score}s 😳
+
+can you beat me?
+${location.href}`;
+
+  if (navigator.share) {
+    navigator.share({ text });
+  } else {
+    navigator.clipboard.writeText(text);
+    alert("Copied!");
+  }
+}
+
+function updateUI() {
+  let remaining = Math.max(0, 5 - attempts);
+
+  document.getElementById("attemptsUI").innerText =
+    `${remaining} attempts left today`;
+
+  document.getElementById("best").innerText =
+    best ? "🏆 Best: " + best + "s" : "";
+}
+
+function setResult(text) {
+  document.getElementById("result").innerText = text;
+}
+
+function showAdGate() {
+  document.getElementById("actions").innerHTML = `
+    <p>No attempts left</p>
+    <button class="primary" onclick="watchAd()">Watch Ad</button>
+  `;
+}
+
+function watchAd() {
+  document.getElementById("adBox").innerHTML =
+    "<div style='padding:10px;background:#111;border-radius:10px;'>Ad</div>";
+
+  attempts = 0;
+  localStorage.setItem("attempts", attempts);
+  updateUI();
+}
+
+function showPolicy() {
+  alert("This site may use cookies and ads to improve experience.");
+}
+</script>
+
+</body>
+</html>
