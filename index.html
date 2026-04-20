@@ -4,9 +4,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>1 Second Challenge</title>
 
-<!-- AdSense verification -->
+
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6860775768496575"
      crossorigin="anonymous"></script>
+
 
 <style>
 :root {
@@ -26,7 +27,6 @@ body {
   justify-content: center;
   background: var(--bg-dark);
   color: var(--text-dark);
-  transition: 0.3s;
 }
 
 .light {
@@ -75,18 +75,12 @@ button {
 #result {
   font-size: 28px;
   margin-top: 20px;
-  min-height: 50px;
+  min-height: 60px;
 }
 
 .small {
   font-size: 13px;
   opacity: 0.7;
-}
-
-footer {
-  margin-top: 20px;
-  font-size: 12px;
-  opacity: 0.6;
 }
 
 .toggle {
@@ -105,62 +99,29 @@ footer {
 <div class="card">
 
 <h2>⏱ 1 Second Challenge</h2>
-<p class="small">Tap twice → hit exactly 1.000s</p>
+<p class="small">tap twice → hit exactly 1.000s</p>
 
 <button class="primary" onclick="tap()">START / STOP</button>
 
 <div id="result"></div>
 <div id="actions"></div>
 
-<p class="small" id="attemptsUI"></p>
 <p class="small" id="best"></p>
 
 </div>
 
-<!-- ABOUT -->
-<div style="max-width:420px;margin-top:20px;font-size:13px;opacity:0.7;text-align:center;">
-  <p>This is a simple timing challenge where you try to stop exactly at 1.000 seconds.</p>
-  <p>It tests your focus, timing, and reaction skills.</p>
-</div>
-
-<footer>
-  <a href="#" onclick="showPolicy()">Privacy Policy</a>
-</footer>
-
 <script>
 let startTime = 0;
 let running = false;
-let cooldown = false;
-
-/* DAILY ATTEMPTS */
-let today = new Date().toDateString();
-let storedDay = localStorage.getItem("day");
-let attempts = parseInt(localStorage.getItem("attempts") || 0);
-
-if (storedDay !== today) {
-  attempts = 0;
-  localStorage.setItem("day", today);
-  localStorage.setItem("attempts", attempts);
-}
-
 let best = localStorage.getItem("best");
 
 updateUI();
 
-/* THEME */
 function toggleTheme() {
   document.body.classList.toggle("light");
 }
 
-/* MAIN GAME */
 function tap() {
-  if (cooldown) return;
-
-  if (attempts >= 5) {
-    startCooldown();
-    return;
-  }
-
   if (!running) {
     startTime = Date.now();
     running = true;
@@ -168,21 +129,30 @@ function tap() {
   } else {
     let diff = (Date.now() - startTime) / 1000;
     running = false;
-
-    attempts++;
-    localStorage.setItem("attempts", attempts);
-
     evaluate(diff);
   }
 }
 
 function evaluate(diff) {
   let rounded = diff.toFixed(3);
-  let message = `You: ${rounded}s`;
+  let distance = Math.abs(1 - rounded).toFixed(3);
 
-  if (rounded === "1.000") message += " 🔥 PERFECT";
-  else if (Math.abs(1 - rounded) < 0.01) message += " 😭 0.01 away";
-  else if (Math.abs(1 - rounded) < 0.02) message += " 😳 so close";
+  let message = `You: ${rounded}s\n`;
+
+  if (rounded === "1.000") {
+    message += "🔥 PERFECT";
+    launchConfetti();
+  } else if (distance <= 0.01) {
+    message += "😭 SO CLOSE";
+  } else if (distance <= 0.02) {
+    message += "😳 CLOSE";
+  } else if (distance <= 0.05) {
+    message += "👍 GOOD";
+  } else {
+    message += "keep trying";
+  }
+
+  message += `\n${distance}s away`;
 
   if (!best || Math.abs(1-rounded) < Math.abs(1-best)) {
     best = rounded;
@@ -193,18 +163,16 @@ function evaluate(diff) {
 
   document.getElementById("actions").innerHTML = `
     <button class="secondary" onclick="share('${rounded}')">Share</button>
-    <button class="primary" onclick="tap()">Try Again</button>
-    ${rounded === "1.000" ? `<p class="small">this is rare 👀</p>` : ""}
+    <button class="primary" onclick="tap()">you're close… try again</button>
   `;
 
   updateUI();
 }
 
-/* SHARE */
 function share(score) {
   let text = `${score}s 😳
 
-can you beat me?
+can you beat this?
 ${location.href}`;
 
   if (navigator.share) {
@@ -215,37 +183,7 @@ ${location.href}`;
   }
 }
 
-/* COOLDOWN INSTEAD OF ADS */
-function startCooldown() {
-  cooldown = true;
-
-  let timeLeft = 10;
-  setResult("No attempts left");
-
-  let interval = setInterval(() => {
-    document.getElementById("attemptsUI").innerText =
-      `Try again in ${timeLeft}s`;
-
-    timeLeft--;
-
-    if (timeLeft < 0) {
-      clearInterval(interval);
-      attempts = 0;
-      cooldown = false;
-      localStorage.setItem("attempts", attempts);
-      updateUI();
-      setResult("Ready again!");
-    }
-  }, 1000);
-}
-
-/* UI */
 function updateUI() {
-  let remaining = Math.max(0, 5 - attempts);
-
-  document.getElementById("attemptsUI").innerText =
-    `${remaining} attempts left today`;
-
   document.getElementById("best").innerText =
     best ? "🏆 Best: " + best + "s" : "";
 }
@@ -254,17 +192,18 @@ function setResult(text) {
   document.getElementById("result").innerText = text;
 }
 
-/* PRIVACY */
-function showPolicy() {
-  document.body.innerHTML = `
-    <div style="padding:20px;font-family:sans-serif;">
-      <h2>Privacy Policy</h2>
-      <p>This site may use cookies and Google AdSense for ads.</p>
-      <p>No personal data is collected directly.</p>
-      <br>
-      <button onclick="location.reload()">Back</button>
-    </div>
-  `;
+/* SIMPLE CONFETTI */
+function launchConfetti() {
+  const confetti = document.createElement("div");
+  confetti.innerHTML = "🎉🎉🎉";
+  confetti.style.position = "fixed";
+  confetti.style.top = "20%";
+  confetti.style.left = "50%";
+  confetti.style.transform = "translateX(-50%)";
+  confetti.style.fontSize = "40px";
+  document.body.appendChild(confetti);
+
+  setTimeout(() => confetti.remove(), 1500);
 }
 </script>
 
